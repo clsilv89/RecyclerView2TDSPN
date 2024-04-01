@@ -6,15 +6,25 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.caiosilva.recyclerview2tdspn.databinding.ItemViewBinding
+import com.squareup.picasso.Picasso
 
 class PostagemAdapter : ListAdapter<Postagem, PostagemAdapter.MyViewHolder>(DiffCallback()) {
+
+    var onClick: (Postagem) -> Unit = {}
 
     inner class MyViewHolder(val binding: ItemViewBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(postagem: Postagem) {
+            binding.imageViewAvatar.setImageFromUrl(postagem.avatar)
+            binding.textViewNomeUsuario2.text = postagem.nomeUsuario
             binding.textViewNomeUsuario.text = postagem.nomeUsuario
             binding.textViewDescricao.text = postagem.descricao
+            binding.imageViewPostagem.setImageFromUrl(postagem.postagem)
+
+            binding.root.setOnClickListener {
+                onClick(postagem)
+            }
         }
     }
 
