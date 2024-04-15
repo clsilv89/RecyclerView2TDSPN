@@ -3,13 +3,20 @@ package com.caiosilva.recyclerview2tdspn
 import android.content.Intent
 import android.os.Bundle
 import android.provider.MediaStore
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.caiosilva.recyclerview2tdspn.databinding.ActivityMainBinding
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private val retrofit = RetrofitClient()
+        .getRetrofit("https://jsonplaceholder.typicode.com/")
+        .create(APIService::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -17,7 +24,63 @@ class MainActivity : ComponentActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupRecyclerView()
+        getPosts()
+        getPhotos()
+    }
+
+    private fun getPosts() {
+        val getPosts = retrofit.getPosts()
+
+        getPosts.enqueue(object : Callback<List<Post>> {
+            override fun onResponse(call: Call<List<Post>>, response: Response<List<Post>>) {
+                println(response.body())
+            }
+
+            override fun onFailure(call: Call<List<Post>>, t: Throwable) {
+                println(t.message)
+            }
+        })
+    }
+
+    private fun getPhotos() {
+        val getPhotos = retrofit.getPhotos()
+
+        getPhotos.enqueue(object : Callback<List<Photo>> {
+            override fun onResponse(call: Call<List<Photo>>, response: Response<List<Photo>>) {
+                setupRecyclerView(response.body().orEmpty())
+            }
+
+            override fun onFailure(p0: Call<List<Photo>>, p1: Throwable) {
+                Toast.makeText(this@MainActivity, p1.message, Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun sendPost(photo: Photo) {
+        val sendPostObject = SendPost(
+            title = photo.title,
+            body = photo.url,
+            usedId = photo.id,
+        )
+        val sendPost = retrofit.sendPost(sendPostObject)
+
+        sendPost.enqueue(object : Callback<Post> {
+            override fun onResponse(call: Call<Post>, response: Response<Post>) {
+                Toast.makeText(
+                    this@MainActivity,
+                    response.body()?.title,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            override fun onFailure(call: Call<Post>, t: Throwable) {
+                Toast.makeText(
+                    this@MainActivity,
+                    t.message,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        })
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -30,12 +93,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun setupRecyclerView() {
+    private fun setupRecyclerView(list: List<Photo>) {
         val adapter = PostagemAdapter()
-        adapter.submitList(listaPostagem())
+        adapter.submitList(list)
         adapter.onClick = {
+            sendPost(it)
 //            openIntent(it)
-            openGallery()
+//            openGallery()
         }
 
         binding.recyclerView.adapter = adapter
